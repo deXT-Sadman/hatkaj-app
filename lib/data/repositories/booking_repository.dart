@@ -13,11 +13,13 @@ class BookingRepository {
     BookingStatus? status,
     int? serviceId,
     int page = 1,
+    int? perPage,
   }) async {
     final json = await _api.get(
       '/bookings',
       query: {
         'page': '$page',
+        if (perPage != null) 'per_page': '$perPage',
         if (status != null) 'status': status.apiValue,
         if (serviceId != null) 'service_id': '$serviceId',
       },

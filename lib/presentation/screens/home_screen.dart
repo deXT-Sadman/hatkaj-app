@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/models/booking_status.dart';
 import '../../data/models/service.dart';
+import '../providers/bookings_provider.dart';
+import '../providers/dashboard_provider.dart';
 import 'booking_form_screen.dart';
 import 'bookings_screen.dart';
+import 'dashboard_screen.dart';
 import 'services_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,28 +18,59 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _tabIndex = 0;
+  static const _dashboardTab = 0;
+  static const _servicesTab = 1;
+  static const _bookingsTab = 2;
+
+  int _tabIndex = _dashboardTab;
+
+  void _selectTab(int index) {
+    setState(() => _tabIndex = index);
+    if (index == _dashboardTab) {
+      context.read<DashboardProvider>().refresh();
+    }
+  }
+
+  void _showBookings(BookingStatus? status) {
+    final bookings = context.read<BookingsProvider>();
+    if (bookings.statusFilter != status) {
+      bookings.setStatusFilter(status);
+    }
+    setState(() => _tabIndex = _bookingsTab);
+  }
 
   Future<void> _openBookingForm({Service? service}) async {
     final messenger = ScaffoldMessenger.of(context);
+    final dashboard = context.read<DashboardProvider>();
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => BookingFormScreen(initialServiceId: service?.id),
       ),
     );
     if (created == true && mounted) {
-      setState(() => _tabIndex = 1);
+      dashboard.refresh();
       messenger.showSnackBar(const SnackBar(content: Text('Booking created')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDashboard = _tabIndex == _dashboardTab;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('HatKaj')),
+      appBar: isDashboard
+          ? null
+          : AppBar(
+              title: Text(_tabIndex == _servicesTab ? 'Services' : 'Bookings'),
+            ),
       body: IndexedStack(
         index: _tabIndex,
         children: [
+          DashboardScreen(
+            onBookService: (service) => _openBookingForm(service: service),
+            onOpenBookings: _showBookings,
+            onSeeAllServices: () => _selectTab(_servicesTab),
+          ),
           ServicesScreen(
             onBook: (service) => _openBookingForm(service: service),
           ),
@@ -48,14 +84,21 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
-        onDestinationSelected: (index) => setState(() => _tabIndex = index),
+        onDestinationSelected: _selectTab,
         destinations: const [
           NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Home',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.handyman_outlined),
+            selectedIcon: Icon(Icons.handyman),
             label: 'Services',
           ),
           NavigationDestination(
             icon: Icon(Icons.event_note_outlined),
+            selectedIcon: Icon(Icons.event_note),
             label: 'Bookings',
           ),
         ],

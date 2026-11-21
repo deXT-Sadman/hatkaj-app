@@ -59,6 +59,7 @@ class FakeBookingRepository implements BookingRepository {
     BookingStatus? status,
     int? serviceId,
     int page = 1,
+    int? perPage,
   }) async {
     lastFilter = status;
     if (fetchError != null) throw fetchError!;

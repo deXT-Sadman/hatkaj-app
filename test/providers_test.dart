@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hatkaj_app/data/models/booking_status.dart';
 import 'package:hatkaj_app/presentation/providers/bookings_provider.dart';
+import 'package:hatkaj_app/presentation/providers/dashboard_provider.dart';
 import 'package:hatkaj_app/presentation/providers/services_provider.dart';
 import 'package:hatkaj_app/presentation/providers/view_state.dart';
 
@@ -117,6 +118,30 @@ void main() {
         BookingStatus.cancelled,
       ]);
       expect(BookingStatus.completed.allowedTransitions, isEmpty);
+    });
+  });
+
+  group('DashboardProvider', () {
+    test('loads counts and upcoming bookings', () async {
+      final provider = DashboardProvider(
+        FakeBookingRepository(bookings: [buildBooking(1), buildBooking(2)]),
+      );
+      expect(provider.state, ViewState.loading);
+
+      await provider.refresh();
+
+      expect(provider.state, ViewState.success);
+      expect(provider.countOf(BookingStatus.pending), 2);
+    });
+
+    test('shows the error state when loading fails', () async {
+      final repository = FakeBookingRepository()..fetchError = networkError;
+      final provider = DashboardProvider(repository);
+
+      final message = await provider.refresh();
+
+      expect(provider.state, ViewState.error);
+      expect(message, networkError.message);
     });
   });
 }

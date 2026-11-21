@@ -5,6 +5,7 @@ import '../../core/network/api_exception.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/booking_status.dart';
 import '../providers/bookings_provider.dart';
+import '../widgets/service_icon.dart';
 import '../widgets/state_view.dart';
 import '../widgets/status_chip.dart';
 
@@ -108,12 +109,86 @@ class _BookingCard extends StatelessWidget {
         '${localizations.formatMediumDate(booking.scheduledAt)} · '
         '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(booking.scheduledAt))}';
 
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Card(
-      child: ListTile(
-        title: Text(booking.service?.name ?? 'Service'),
-        subtitle: Text('$when\n${booking.customerName}\n${booking.address}'),
-        isThreeLine: true,
-        trailing: _StatusMenu(booking),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 5, color: statusColor(booking.status)),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: scheme.primaryContainer,
+                          child: Icon(
+                            serviceIcon(booking.service?.name ?? ''),
+                            size: 18,
+                            color: scheme.onPrimaryContainer,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            booking.service?.name ?? 'Service',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        _StatusMenu(booking),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _InfoRow(icon: Icons.schedule, text: when),
+                    _InfoRow(
+                      icon: Icons.person_outline,
+                      text: booking.customerName,
+                    ),
+                    _InfoRow(icon: Icons.place_outlined, text: booking.address),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.outline),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
       ),
     );
   }
