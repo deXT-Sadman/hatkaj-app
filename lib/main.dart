@@ -38,6 +38,7 @@ class HatKajApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'HatKaj',
+        debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         home: const HomeScreen(),
       ),
