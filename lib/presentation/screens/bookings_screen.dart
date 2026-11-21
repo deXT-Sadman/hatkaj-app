@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/network/api_exception.dart';
 import '../../data/models/booking.dart';
+import '../../data/models/booking_status.dart';
 import '../providers/bookings_provider.dart';
 import '../widgets/state_view.dart';
 import '../widgets/status_chip.dart';
@@ -24,24 +26,71 @@ class BookingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<BookingsProvider>();
 
-    return StateView(
-      state: provider.state,
-      errorMessage: provider.errorMessage,
-      emptyMessage: 'No bookings yet.\nTap "New booking" to make one.',
-      onRefresh: () => _showErrorIfAny(context, provider.refresh()),
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-        itemCount: provider.bookings.length + (provider.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == provider.bookings.length) {
-            return _LoadMore(
-              isLoading: provider.isLoadingMore,
-              onPressed: () => _showErrorIfAny(context, provider.loadMore()),
-            );
-          }
-          return _BookingCard(provider.bookings[index]);
-        },
+    final filter = provider.statusFilter;
+
+    return Column(
+      children: [
+        _FilterBar(
+          selected: filter,
+          onSelected: (status) =>
+              _showErrorIfAny(context, provider.setStatusFilter(status)),
+        ),
+        Expanded(
+          child: StateView(
+            state: provider.state,
+            errorMessage: provider.errorMessage,
+            emptyMessage: filter == null
+                ? 'No bookings yet.\nTap "New booking" to make one.'
+                : 'No ${filter.label.toLowerCase()} bookings.',
+            onRefresh: () => _showErrorIfAny(context, provider.refresh()),
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 88),
+              itemCount: provider.bookings.length + (provider.hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == provider.bookings.length) {
+                  return _LoadMore(
+                    isLoading: provider.isLoadingMore,
+                    onPressed: () =>
+                        _showErrorIfAny(context, provider.loadMore()),
+                  );
+                }
+                return _BookingCard(provider.bookings[index]);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.selected, required this.onSelected});
+
+  final BookingStatus? selected;
+  final ValueChanged<BookingStatus?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        spacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('All'),
+            selected: selected == null,
+            onSelected: (_) => onSelected(null),
+          ),
+          for (final status in BookingStatus.values)
+            ChoiceChip(
+              label: Text(status.label),
+              selected: selected == status,
+              onSelected: (_) => onSelected(status),
+            ),
+        ],
       ),
     );
   }
@@ -64,8 +113,49 @@ class _BookingCard extends StatelessWidget {
         title: Text(booking.service?.name ?? 'Service'),
         subtitle: Text('$when\n${booking.customerName}\n${booking.address}'),
         isThreeLine: true,
-        trailing: StatusChip(booking.status),
+        trailing: _StatusMenu(booking),
       ),
+    );
+  }
+}
+
+/// Status chip that doubles as a menu of the transitions the API allows.
+class _StatusMenu extends StatelessWidget {
+  const _StatusMenu(this.booking);
+
+  final Booking booking;
+
+  Future<void> _change(BuildContext context, BookingStatus status) async {
+    final provider = context.read<BookingsProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await provider.updateStatus(booking, status);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Booking marked ${status.label.toLowerCase()}.'),
+        ),
+      );
+    } on ApiException catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final options = booking.status.allowedTransitions;
+    if (options.isEmpty) return StatusChip(booking.status);
+
+    return PopupMenuButton<BookingStatus>(
+      tooltip: 'Change status',
+      onSelected: (status) => _change(context, status),
+      itemBuilder: (_) => [
+        for (final status in options)
+          PopupMenuItem(
+            value: status,
+            child: Text('Mark ${status.label.toLowerCase()}'),
+          ),
+      ],
+      child: StatusChip(booking.status),
     );
   }
 }

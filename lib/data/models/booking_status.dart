@@ -16,4 +16,11 @@ enum BookingStatus {
       orElse: () => throw FormatException('Unknown booking status: $value'),
     );
   }
+
+  /// Mirrors the API's transition rules so the UI only offers valid actions.
+  List<BookingStatus> get allowedTransitions => switch (this) {
+    pending => [confirmed, cancelled],
+    confirmed => [completed, cancelled],
+    completed || cancelled => const [],
+  };
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hatkaj_app/data/models/booking_status.dart';
 import 'package:hatkaj_app/presentation/providers/bookings_provider.dart';
 import 'package:hatkaj_app/presentation/providers/services_provider.dart';
 import 'package:hatkaj_app/presentation/providers/view_state.dart';
@@ -84,6 +85,38 @@ void main() {
         provider.createBooking(newBookingFixture),
         throwsA(networkError),
       );
+    });
+
+    test('setStatusFilter reloads with the chosen status', () async {
+      final repository = FakeBookingRepository(bookings: [buildBooking(1)]);
+      final provider = BookingsProvider(repository);
+
+      await provider.setStatusFilter(BookingStatus.confirmed);
+
+      expect(provider.statusFilter, BookingStatus.confirmed);
+      expect(repository.lastFilter, BookingStatus.confirmed);
+    });
+
+    test('updateStatus sends the change and reloads the list', () async {
+      final repository = FakeBookingRepository(bookings: [buildBooking(1)]);
+      final provider = BookingsProvider(repository);
+      await provider.refresh();
+
+      await provider.updateStatus(
+        provider.bookings.first,
+        BookingStatus.confirmed,
+      );
+
+      expect(repository.lastUpdatedTo, BookingStatus.confirmed);
+      expect(provider.bookings.first.status, BookingStatus.confirmed);
+    });
+
+    test('pending can only move to confirmed or cancelled', () {
+      expect(BookingStatus.pending.allowedTransitions, [
+        BookingStatus.confirmed,
+        BookingStatus.cancelled,
+      ]);
+      expect(BookingStatus.completed.allowedTransitions, isEmpty);
     });
   });
 }

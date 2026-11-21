@@ -22,15 +22,16 @@ final newBookingFixture = NewBooking(
   scheduledAt: DateTime(2030, 1, 1, 10),
 );
 
-Booking buildBooking(int id) => Booking(
-  id: id,
-  customerName: 'Rahim',
-  customerPhone: '01712345678',
-  address: 'Dhaka',
-  scheduledAt: DateTime(2026, 12, 30, 10),
-  status: BookingStatus.pending,
-  service: acService,
-);
+Booking buildBooking(int id, {BookingStatus status = BookingStatus.pending}) =>
+    Booking(
+      id: id,
+      customerName: 'Rahim',
+      customerPhone: '01712345678',
+      address: 'Dhaka',
+      scheduledAt: DateTime(2026, 12, 30, 10),
+      status: status,
+      service: acService,
+    );
 
 class FakeServiceRepository implements ServiceRepository {
   FakeServiceRepository({this.services = const [acService], this.error});
@@ -59,6 +60,7 @@ class FakeBookingRepository implements BookingRepository {
     int? serviceId,
     int page = 1,
   }) async {
+    lastFilter = status;
     if (fetchError != null) throw fetchError!;
     return Paginated(items: bookings, currentPage: 1, lastPage: 1);
   }
@@ -72,9 +74,17 @@ class FakeBookingRepository implements BookingRepository {
     return created;
   }
 
+  BookingStatus? lastFilter;
+  BookingStatus? lastUpdatedTo;
+
   @override
-  Future<Booking> updateStatus(int bookingId, BookingStatus status) {
-    throw UnimplementedError();
+  Future<Booking> updateStatus(int bookingId, BookingStatus status) async {
+    lastUpdatedTo = status;
+    bookings = [
+      for (final b in bookings)
+        b.id == bookingId ? buildBooking(b.id, status: status) : b,
+    ];
+    return bookings.firstWhere((b) => b.id == bookingId);
   }
 }
 
