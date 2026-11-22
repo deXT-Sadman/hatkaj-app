@@ -2,33 +2,43 @@
 
 ![Flutter](https://img.shields.io/badge/Flutter-3-02569B?logo=flutter&logoColor=white)
 ![State](https://img.shields.io/badge/state-Provider-0E9F8E)
-![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-38%20passing-brightgreen)
 
 Flutter client for **HatKaj**, a smart maintenance and service booking platform. It talks to the Laravel [`hatkaj-api`](https://github.com/deXT-Sadman/hatkaj-api).
 
-Screenshots below are from the Android emulator running against the local API.
+Screenshots below are from the Android emulator running against the local API (signed in as a freshly registered user).
 
 <table>
   <tr>
+    <td align="center"><img src="docs/screenshots/login.png" width="220" alt="Log in screen"><br><sub><b>Log in</b></sub></td>
+    <td align="center"><img src="docs/screenshots/register.png" width="220" alt="Create account form"><br><sub><b>Sign up</b></sub></td>
     <td align="center"><img src="docs/screenshots/home.png" width="220" alt="Home dashboard with status counts and upcoming bookings"><br><sub><b>Home dashboard</b></sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="docs/screenshots/services.png" width="220" alt="Service list with icons, duration and price"><br><sub><b>Services</b></sub></td>
     <td align="center"><img src="docs/screenshots/bookings.png" width="220" alt="Bookings list with status filter chips"><br><sub><b>Bookings + filters</b></sub></td>
+    <td align="center"><img src="docs/screenshots/status.png" width="220" alt="Status menu showing only the transitions the API allows"><br><sub><b>Status update</b></sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/form.png" width="220" alt="New booking form"><br><sub><b>New booking</b></sub></td>
     <td align="center"><img src="docs/screenshots/conflict.png" width="220" alt="Slot conflict message returned by the API"><br><sub><b>Slot conflict (409)</b></sub></td>
+    <td align="center"><img src="docs/screenshots/checkout.png" width="220" alt="Review screen with price breakdown and payment method"><br><sub><b>Review &amp; confirm</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/confirmed.png" width="220" alt="Order confirmation"><br><sub><b>Confirmation</b></sub></td>
+    <td align="center"><img src="docs/screenshots/profile.png" width="220" alt="Profile screen with editable name, phone and address"><br><sub><b>Profile</b></sub></td>
     <td></td>
   </tr>
 </table>
 
 ## Features
-- **Home dashboard**: status counts (tap one to open Bookings filtered by it), the next upcoming bookings, and quick service shortcuts
+- **Home dashboard**: time-of-day greeting with the number of active bookings, status counts (tap one to open Bookings filtered by it), the next 3 upcoming bookings, quick service shortcuts and pull-to-refresh
 - **Services** list, and a **booking form** with validation and server errors shown inline (including the 409 "slot already booked")
 - **Bookings** list with pull-to-refresh, "load more" pagination and status filter chips
 - **Status updates**: tap a booking's status chip to see only the transitions the API allows
 - **Sign up / log in / log out** with a Sanctum API token kept in the device keystore (`flutter_secure_storage`); an expired token signs you out automatically
 - **Profile** tab: edit name, phone and default address, which pre-fill the booking form
-- **Checkout**: the booking form opens a review screen with the server's price breakdown (price, service fee, total), a payment method choice (cash on service or demo wallet; nothing is charged) and an order confirmation
+- **Checkout**: the booking form calls `POST /bookings/preview` and opens a review screen with the server's price breakdown (price, service fee, total), a payment method choice (cash on service or demo wallet; nothing is charged) and an order confirmation
 - Explicit loading / empty / error / success states on every screen
 
 ## Setup
