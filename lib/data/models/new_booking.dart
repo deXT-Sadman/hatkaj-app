@@ -1,3 +1,5 @@
+import 'payment_method.dart';
+
 /// The form payload for `POST /api/bookings` (a booking before the server assigns an id).
 class NewBooking {
   const NewBooking({
@@ -6,6 +8,7 @@ class NewBooking {
     required this.customerPhone,
     required this.address,
     required this.scheduledAt,
+    this.paymentMethod = PaymentMethod.cashOnService,
     this.notes,
   });
 
@@ -14,7 +17,20 @@ class NewBooking {
   final String customerPhone;
   final String address;
   final DateTime scheduledAt;
+  final PaymentMethod paymentMethod;
   final String? notes;
+
+  NewBooking withPaymentMethod(PaymentMethod method) {
+    return NewBooking(
+      serviceId: serviceId,
+      customerName: customerName,
+      customerPhone: customerPhone,
+      address: address,
+      scheduledAt: scheduledAt,
+      paymentMethod: method,
+      notes: notes,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'service_id': serviceId,
@@ -22,6 +38,7 @@ class NewBooking {
     'customer_phone': customerPhone,
     'address': address,
     'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+    'payment_method': paymentMethod.apiValue,
     if (notes != null && notes!.isNotEmpty) 'notes': notes,
   };
 }

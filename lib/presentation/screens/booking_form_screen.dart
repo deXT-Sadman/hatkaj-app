@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/models/new_booking.dart';
+import '../providers/auth_provider.dart';
 import '../providers/bookings_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/view_state.dart';
+import '../widgets/error_banner.dart';
+import 'checkout_screen.dart';
 
 /// Pops with `true` when a booking was created.
 class BookingFormScreen extends StatefulWidget {
@@ -40,6 +43,11 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   void initState() {
     super.initState();
     _serviceId = widget.initialServiceId;
+
+    final user = context.read<AuthProvider>().user;
+    _nameController.text = user?.name ?? '';
+    _phoneController.text = user?.phone ?? '';
+    _addressController.text = user?.defaultAddress ?? '';
   }
 
   @override
@@ -99,19 +107,31 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
+    final booking = NewBooking(
+      serviceId: _serviceId!,
+      customerName: _nameController.text.trim(),
+      customerPhone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+      scheduledAt: _scheduledAt!,
+      notes: _notesController.text.trim(),
+    );
     try {
-      await context.read<BookingsProvider>().createBooking(
-        NewBooking(
-          serviceId: _serviceId!,
-          customerName: _nameController.text.trim(),
-          customerPhone: _phoneController.text.trim(),
-          address: _addressController.text.trim(),
-          scheduledAt: _scheduledAt!,
-          notes: _notesController.text.trim(),
+      final summary = await context.read<BookingsProvider>().previewBooking(
+        booking,
+      );
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      final created = await navigator.push<bool>(
+        MaterialPageRoute(
+          builder: (_) => CheckoutScreen(booking: booking, summary: summary),
         ),
       );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      if (created == true) {
+        navigator.pop(true);
+      } else {
+        setState(() => _isSubmitting = false);
+      }
     } catch (error) {
       if (!mounted) return;
       final isValidation = error is ApiException && error.isValidationError;
@@ -227,7 +247,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
             ),
             if (_formError != null) ...[
               const SizedBox(height: 16),
-              _ErrorBanner(_formError!),
+              ErrorBanner(_formError!),
             ],
             const SizedBox(height: 24),
             FilledButton(
@@ -238,40 +258,10 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Book now'),
+                  : const Text('Review booking'),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner(this.message);
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-        ],
       ),
     );
   }

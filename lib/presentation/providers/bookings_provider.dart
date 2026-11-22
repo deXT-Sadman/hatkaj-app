@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/models/booking.dart';
 import '../../data/models/booking_status.dart';
+import '../../data/models/booking_summary.dart';
 import '../../data/models/new_booking.dart';
 import '../../data/repositories/booking_repository.dart';
 import 'view_state.dart';
@@ -80,11 +81,18 @@ class BookingsProvider extends ChangeNotifier {
     }
   }
 
+  /// Asks the server for the checkout summary and price breakdown without saving anything.
+  /// Throws [ApiException] (e.g. 409 slot taken, 422 validation) for the form to display.
+  Future<BookingSummary> previewBooking(NewBooking booking) {
+    return _repository.previewBooking(booking);
+  }
+
   /// Creates a booking, then reloads the list so server ordering is preserved.
   /// Throws [ApiException] (e.g. 409 slot taken, 422 validation) for the form to display.
-  Future<void> createBooking(NewBooking booking) async {
-    await _repository.createBooking(booking);
+  Future<Booking> createBooking(NewBooking booking) async {
+    final created = await _repository.createBooking(booking);
     await refresh();
+    return created;
   }
 
   /// Filters the list by status (null shows all) and reloads from page 1.

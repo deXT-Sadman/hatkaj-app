@@ -1,9 +1,13 @@
 import 'package:hatkaj_app/core/network/api_exception.dart';
 import 'package:hatkaj_app/data/models/booking.dart';
 import 'package:hatkaj_app/data/models/booking_status.dart';
+import 'package:hatkaj_app/data/models/booking_summary.dart';
 import 'package:hatkaj_app/data/models/new_booking.dart';
 import 'package:hatkaj_app/data/models/paginated.dart';
+import 'package:hatkaj_app/data/models/pricing.dart';
 import 'package:hatkaj_app/data/models/service.dart';
+import 'package:hatkaj_app/data/models/user.dart';
+import 'package:hatkaj_app/data/repositories/auth_repository.dart';
 import 'package:hatkaj_app/data/repositories/booking_repository.dart';
 import 'package:hatkaj_app/data/repositories/service_repository.dart';
 
@@ -20,6 +24,20 @@ final newBookingFixture = NewBooking(
   customerPhone: '01712345678',
   address: 'Dhaka',
   scheduledAt: DateTime(2030, 1, 1, 10),
+);
+
+const pricingFixture = Pricing(
+  basePrice: 1200,
+  serviceFee: 60,
+  totalAmount: 1260,
+);
+
+const userFixture = User(
+  id: 1,
+  name: 'Rahim',
+  email: 'rahim@example.com',
+  phone: '01712345678',
+  defaultAddress: 'Dhaka',
 );
 
 Booking buildBooking(int id, {BookingStatus status = BookingStatus.pending}) =>
@@ -47,12 +65,34 @@ class FakeServiceRepository implements ServiceRepository {
 }
 
 class FakeBookingRepository implements BookingRepository {
-  FakeBookingRepository({this.bookings = const [], this.createError});
+  FakeBookingRepository({
+    this.bookings = const [],
+    this.createError,
+    this.previewError,
+  });
 
   List<Booking> bookings;
   Object? createError;
+  Object? previewError;
   Object? fetchError;
   int createCalls = 0;
+  int previewCalls = 0;
+  NewBooking? lastCreated;
+
+  @override
+  Future<BookingSummary> previewBooking(NewBooking booking) async {
+    previewCalls++;
+    if (previewError != null) throw previewError!;
+    return BookingSummary(
+      service: acService,
+      customerName: booking.customerName,
+      customerPhone: booking.customerPhone,
+      address: booking.address,
+      scheduledAt: booking.scheduledAt,
+      paymentMethod: booking.paymentMethod,
+      pricing: pricingFixture,
+    );
+  }
 
   @override
   Future<Paginated<Booking>> fetchBookings({
@@ -69,6 +109,7 @@ class FakeBookingRepository implements BookingRepository {
   @override
   Future<Booking> createBooking(NewBooking booking) async {
     createCalls++;
+    lastCreated = booking;
     if (createError != null) throw createError!;
     final created = buildBooking(bookings.length + 1);
     bookings = [...bookings, created];
@@ -92,3 +133,51 @@ class FakeBookingRepository implements BookingRepository {
 const networkError = ApiException(
   'Cannot reach the server. Check your connection.',
 );
+
+class FakeAuthRepository implements AuthRepository {
+  FakeAuthRepository({this.loginError, this.profileError});
+
+  Object? loginError;
+  Object? profileError;
+  int logoutCalls = 0;
+
+  @override
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) async {
+    if (loginError != null) throw loginError!;
+    return const AuthSession(user: userFixture, token: 'token-123');
+  }
+
+  @override
+  Future<AuthSession> register({
+    required String name,
+    required String email,
+    required String password,
+    String? phone,
+    String? defaultAddress,
+  }) async => const AuthSession(user: userFixture, token: 'token-123');
+
+  @override
+  Future<void> logout() async => logoutCalls++;
+
+  @override
+  Future<User> fetchProfile() async {
+    if (profileError != null) throw profileError!;
+    return userFixture;
+  }
+
+  @override
+  Future<User> updateProfile({
+    required String name,
+    String? phone,
+    String? defaultAddress,
+  }) async => User(
+    id: userFixture.id,
+    name: name,
+    email: userFixture.email,
+    phone: phone,
+    defaultAddress: defaultAddress,
+  );
+}

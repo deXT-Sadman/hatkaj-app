@@ -1,6 +1,7 @@
 import '../../core/network/api_client.dart';
 import '../models/booking.dart';
 import '../models/booking_status.dart';
+import '../models/booking_summary.dart';
 import '../models/new_booking.dart';
 import '../models/paginated.dart';
 
@@ -25,6 +26,11 @@ class BookingRepository {
       },
     );
     return Paginated.fromJson(json, Booking.fromJson);
+  }
+
+  Future<BookingSummary> previewBooking(NewBooking booking) async {
+    final json = await _api.post('/bookings/preview', booking.toJson());
+    return BookingSummary.fromJson(json['data'] as Map<String, dynamic>);
   }
 
   Future<Booking> createBooking(NewBooking booking) async {

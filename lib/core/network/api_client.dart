@@ -15,18 +15,34 @@ class ApiClient {
   final String _baseUrl;
   final http.Client _client;
 
-  static const _headers = {
+  /// Sent as a bearer token on every request while set.
+  String? authToken;
+
+  /// Called when the server rejects the current token (HTTP 401), so the app can sign out.
+  void Function()? onUnauthorized;
+
+  Map<String, String> get _headers => {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    if (authToken != null) 'Authorization': 'Bearer $authToken',
   };
 
   Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) {
     return _send(() => _client.get(_uri(path, query), headers: _headers));
   }
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) {
+  Future<Map<String, dynamic>> post(
+    String path, [
+    Map<String, dynamic> body = const {},
+  ]) {
     return _send(
       () => _client.post(_uri(path), headers: _headers, body: jsonEncode(body)),
+    );
+  }
+
+  Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) {
+    return _send(
+      () => _client.put(_uri(path), headers: _headers, body: jsonEncode(body)),
     );
   }
 
@@ -59,6 +75,9 @@ class ApiClient {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
+    }
+    if (response.statusCode == 401 && authToken != null) {
+      onUnauthorized?.call();
     }
     throw ApiException(
       body['message'] as String? ??

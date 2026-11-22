@@ -8,6 +8,7 @@ import '../providers/dashboard_provider.dart';
 import 'booking_form_screen.dart';
 import 'bookings_screen.dart';
 import 'dashboard_screen.dart';
+import 'profile_screen.dart';
 import 'services_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _dashboardTab = 0;
   static const _servicesTab = 1;
   static const _bookingsTab = 2;
+  static const _profileTab = 3;
 
   int _tabIndex = _dashboardTab;
 
@@ -61,7 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: isDashboard
           ? null
           : AppBar(
-              title: Text(_tabIndex == _servicesTab ? 'Services' : 'Bookings'),
+              title: Text(switch (_tabIndex) {
+                _servicesTab => 'Services',
+                _profileTab => 'Profile',
+                _ => 'Bookings',
+              }),
             ),
       body: IndexedStack(
         index: _tabIndex,
@@ -75,13 +81,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onBook: (service) => _openBookingForm(service: service),
           ),
           const BookingsScreen(),
+          const ProfileScreen(),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openBookingForm,
-        icon: const Icon(Icons.add),
-        label: const Text('New booking'),
-      ),
+      floatingActionButton: _tabIndex == _profileTab
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openBookingForm,
+              icon: const Icon(Icons.add),
+              label: const Text('New booking'),
+            ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: _selectTab,
@@ -100,6 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.event_note_outlined),
             selectedIcon: Icon(Icons.event_note),
             label: 'Bookings',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
